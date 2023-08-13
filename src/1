@@ -1,0 +1,4 @@
+curl -X POST -H "Authorization: Bearer sk-KPtZrXKQe6r7vZnTn3UyT3BlbkFJlJ6I30JtHJVpzPAoQbfYY" -H "Content-Type: application/json" -d '{
+    "prompt": "Translate the following English text to French: 'Hello, how are you?'",
+    "max_tokens": 150
+}' https://api.openai.com/v1/engines/davinci/completions

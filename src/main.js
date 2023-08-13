@@ -21,11 +21,26 @@ bot.command('new', async (ctx) => {
     await ctx.reply('Жду вашего голосового или текстового сообщения')
 })
 
+async function chatWithOpenAI(messages, attempts = 20) {
+    if (attempts <= 0) {
+        console.error("Превышено максимальное количество попыток!");
+        return null; // возвращаем null, чтобы показать, что запрос не удался
+    }
+
+    try {
+        const response = await openai.chat(messages);
+        return response; // возвращаем ответ, если все прошло успешно
+    } catch (error) {
+        console.error("Ошибка при взаимодействии с OpenAI:", error);
+        // Перезапускаем функцию с уменьшенным количеством попыток
+        return chatWithOpenAI(messages, attempts - 1);
+    }
+}
+
 bot.on(message('voice'), async ctx => {
     ctx.session ??= INITIAL_SESSION
     try {
         await ctx.reply("<b><i>АлешкинGPT думает, ожидайте...</i></b>", { parse_mode: "HTML" });
-
 
         console.log("Getting file link...");
         const link = await ctx.telegram.getFileLink(ctx.message.voice.file_id);
@@ -44,13 +59,10 @@ bot.on(message('voice'), async ctx => {
         const text = await openai.transcription(mp3Path);
         await ctx.reply("<i>" + text + "</i>", { parse_mode: "HTML" });
 
-
         console.log("Chatting with OpenAI...");
         ctx.session.messages.push({ role: openai.roles.USER, content: text });
-        const response = await openai.chat(ctx.session.messages);
-        //console.log("OpenAI chat done:", { content: response.content });
-
-
+        const response = await chatWithOpenAI(ctx.session.messages);
+        
         ctx.session.messages.push({
              role: openai.roles.ASSISTANT,
               content: response.content,
@@ -69,7 +81,7 @@ bot.on(message('text'), async ctx => {
 
         ctx.session.messages.push({ role: openai.roles.USER, content: ctx.message.text });
         
-        const response = await openai.chat(ctx.session.messages);
+        const response = await chatWithOpenAI(ctx.session.messages);
 
         ctx.session.messages.push({
              role: openai.roles.ASSISTANT,
